@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+*.log
+.env
+.venv/
+venv/
+node_modules/
+dist/
+build/
+.next/
+.codex/
+
+# Source/private planning material and generated extraction artifacts
+*.pdf
+pdf_pages/

@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MagEdu Adaptive Learning</title>
+    <link rel="stylesheet" href="/static/styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">M</div>
+          <div>
+            <strong>MagEdu</strong>
+            <span>Adaptive NCERT tutor</span>
+          </div>
+        </div>
+        <nav>
+          <button class="nav-button active" data-view="student">Student</button>
+          <button class="nav-button" data-view="teacher">Teacher</button>
+          <button class="nav-button" data-view="content">Content</button>
+        </nav>
+        <label class="field">
+          <span>Demo student</span>
+          <select id="studentSelect"></select>
+        </label>
+      </aside>
+
+      <main>
+        <section id="studentView" class="view active">
+          <div class="topbar">
+            <div>
+              <p class="eyebrow">Student workspace</p>
+              <h1 id="studentTitle">Learning path</h1>
+            </div>
+            <button id="diagnosticBtn" class="primary">Start diagnostic</button>
+          </div>
+
+          <div class="stats-grid">
+            <article class="stat">
+              <span>Streak</span>
+              <strong id="streak">0 days</strong>
+            </article>
+            <article class="stat">
+              <span>Topics mastered</span>
+              <strong id="mastered">0</strong>
+            </article>
+            <article class="stat">
+              <span>Accuracy proxy</span>
+              <strong id="accuracy">0%</strong>
+            </article>
+            <article class="stat">
+              <span>Pace</span>
+              <strong id="pace">normal</strong>
+            </article>
+          </div>
+
+          <div class="workspace-grid">
+            <section class="panel lesson-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">Recommended now</p>
+                  <h2 id="recommendTitle">Loading</h2>
+                </div>
+                <span id="difficultyBadge" class="badge">easy</span>
+              </div>
+              <div id="lessonBody" class="lesson-body"></div>
+              <div id="sources" class="sources"></div>
+              <div class="mode-row">
+                <button data-mode="teach">Teach</button>
+                <button data-mode="simpler">Simpler</button>
+                <button data-mode="quiz">Quiz</button>
+                <button data-mode="exercise">Exercise</button>
+              </div>
+            </section>
+
+            <section class="panel quiz-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">Skill check</p>
+                  <h2>Checkpoint quiz</h2>
+                </div>
+              </div>
+              <div id="quizBox"></div>
+            </section>
+          </div>
+
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Skill graph</p>
+                <h2>Learning paths</h2>
+              </div>
+            </div>
+            <div id="paths" class="paths"></div>
+          </section>
+        </section>
+
+        <section id="teacherView" class="view">
+          <div class="topbar">
+            <div>
+              <p class="eyebrow">Teacher dashboard</p>
+              <h1>Class overview</h1>
+            </div>
+            <button id="refreshTeacher" class="secondary">Refresh</button>
+          </div>
+
+          <div class="teacher-grid">
+            <section class="panel heatmap-panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">Class heatmap</p>
+                  <h2>Mastery by student and topic</h2>
+                </div>
+              </div>
+              <div id="heatmap" class="heatmap"></div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">At-risk alerts</p>
+                  <h2>Who needs help today</h2>
+                </div>
+              </div>
+              <div id="alerts" class="alerts"></div>
+            </section>
+          </div>
+
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Class weak spots</p>
+                <h2>Tomorrow's reteach targets</h2>
+              </div>
+            </div>
+            <div id="weakSpots" class="weak-spots"></div>
+          </section>
+        </section>
+
+        <section id="contentView" class="view">
+          <div class="topbar">
+            <div>
+              <p class="eyebrow">Content store</p>
+              <h1>Textbook ingestion</h1>
+            </div>
+          </div>
+          <section class="panel">
+            <h2>Upload text content</h2>
+            <p class="muted">Upload a plain text export from a chapter. The app chunks and tags it for local RAG retrieval.</p>
+            <input id="contentFile" type="file" accept=".txt,text/plain">
+            <button id="uploadBtn" class="primary">Ingest content</button>
+            <pre id="uploadResult"></pre>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
+
