@@ -77,20 +77,12 @@ def bootstrap():
 
 @router.get("/student/{student_id}")
 def student(student_id: str):
-    return store.get_student_view()
+    return store.get_student_view(student_id)
 
 
 @router.get("/teacher")
-def teacher(
-    current_user=Depends(get_current_user)
-):
-    if current_user.role != "teacher":
-        raise HTTPException(
-            status_code=403,
-            detail="Teachers only"
-        )
-
-    return store.get_teacher_view(current_user.id)
+def teacher():
+    return store.get_teacher_view()
 
 @router.post("/diagnostic/start/{student_id}")
 def start_diagnostic(student_id: str):
