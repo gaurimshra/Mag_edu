@@ -11,5 +11,6 @@ build/
 .codex/
 
 # Source/private planning material and generated extraction artifacts
+*.md
 *.pdf
 pdf_pages/

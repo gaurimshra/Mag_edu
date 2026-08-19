@@ -1,2 +1,0 @@
-"""MagEdu adaptive learning app."""
-
