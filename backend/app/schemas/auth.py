@@ -33,6 +33,10 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class DemoLoginRequest(BaseModel):
+    role: str = "student"  # "student" | "teacher"
+
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"

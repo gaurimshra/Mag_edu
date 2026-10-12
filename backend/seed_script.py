@@ -14,8 +14,10 @@ from sqlalchemy import select
 
 from app.models.assignment import Assignment
 from app.models.student import StudentMisconception, MistakeType
+from app.core.init_db import init_db
 
 async def seed():
+    await init_db()
     async with AsyncSessionLocal() as db:
         # Create Teacher
         result = await db.execute(select(User).where(User.email == "teacher@school.edu"))
@@ -103,62 +105,84 @@ async def seed():
             i = persona["id"]
             email = f"student{i}@school.edu"
             
-            # Delete if exists to recreate with fresh persona data
             result = await db.execute(select(User).where(User.email == email))
-            existing_student = result.scalar_one_or_none()
-            if existing_student:
-                await db.delete(existing_student)
+            student = result.scalar_one_or_none()
+            if not student:
+                student = User(
+                    name=persona["name"],
+                    email=email,
+                    password_hash=hash_password("password123"),
+                    role=UserRole.student
+                )
+                db.add(student)
                 await db.commit()
-                
-            student = User(
-                name=persona["name"],
-                email=email,
-                password_hash=hash_password("password123"),
-                role=UserRole.student
-            )
-            db.add(student)
-            await db.commit()
-            await db.refresh(student)
+                await db.refresh(student)
 
-            # Create profile
-            profile = StudentProfile(
-                user_id=student.id,
-                grade=10,
-                xp=persona["xp"],
-                streak=persona["streak"],
-                last_active=today - timedelta(days=persona["active_days_ago"]),
-                pace=persona["pace"]
-            )
-            db.add(profile)
+            # Profile
+            result_prof = await db.execute(select(StudentProfile).where(StudentProfile.user_id == student.id))
+            profile = result_prof.scalar_one_or_none()
+            if not profile:
+                profile = StudentProfile(
+                    user_id=student.id,
+                    grade=10,
+                    xp=persona["xp"],
+                    streak=persona["streak"],
+                    last_active=today - timedelta(days=persona["active_days_ago"]),
+                    pace=persona["pace"]
+                )
+                db.add(profile)
+            else:
+                profile.xp = persona["xp"]
+                profile.streak = persona["streak"]
+                profile.last_active = today - timedelta(days=persona["active_days_ago"])
+                profile.pace = persona["pace"]
 
-            # Add to classroom 10A
-            member = ClassroomMember(
-                classroom_id=class_10a.id,
-                student_id=student.id
-            )
-            db.add(member)
+            # Add to classroom 10A if not already member
+            result_mem = await db.execute(select(ClassroomMember).where(
+                ClassroomMember.classroom_id == class_10a.id,
+                ClassroomMember.student_id == student.id
+            ))
+            if not result_mem.scalar_one_or_none():
+                member = ClassroomMember(
+                    classroom_id=class_10a.id,
+                    student_id=student.id
+                )
+                db.add(member)
             
-            # Add mastery scores and simulate misconceptions for falling behind
+            # Add mastery scores
             for skill in skills:
                 mscore = random.uniform(*persona["score_range"])
-                score = MasteryScore(
-                    student_id=student.id,
-                    skill_id=skill,
-                    score=mscore,
-                    attempts=random.randint(*persona["attempts"])
-                )
-                db.add(score)
+                result_score = await db.execute(select(MasteryScore).where(
+                    MasteryScore.student_id == student.id,
+                    MasteryScore.skill_id == skill
+                ))
+                score_obj = result_score.scalar_one_or_none()
+                if not score_obj:
+                    score = MasteryScore(
+                        student_id=student.id,
+                        skill_id=skill,
+                        score=mscore,
+                        attempts=random.randint(*persona["attempts"])
+                    )
+                    db.add(score)
+                else:
+                    score_obj.score = mscore
                 
                 # If score is very low, mock a misconception
                 if mscore < 0.4:
-                    mis = StudentMisconception(
-                        student_id=student.id,
-                        misconception_id="Misunderstanding of Reactant Conservation in Balancing",
-                        skill_id=skill,
-                        confidence=0.88,
-                        incidences=random.randint(1, 3)
-                    )
-                    db.add(mis)
+                    mis_res = await db.execute(select(StudentMisconception).where(
+                        StudentMisconception.student_id == student.id,
+                        StudentMisconception.skill_id == skill
+                    ))
+                    if not mis_res.scalar_one_or_none():
+                        mis = StudentMisconception(
+                            student_id=student.id,
+                            misconception_id="Misunderstanding of Reactant Conservation in Balancing",
+                            skill_id=skill,
+                            confidence=0.88,
+                            incidences=random.randint(1, 3)
+                        )
+                        db.add(mis)
             
             await db.commit()
             print(f"Created student: {student.email} ({student.name}) in {class_10a.name}")

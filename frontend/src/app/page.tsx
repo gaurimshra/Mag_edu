@@ -3,13 +3,38 @@
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-import { Target, TrendingUp, BookOpen, GraduationCap, ArrowRight, Brain } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Target, TrendingUp, BookOpen, GraduationCap, ArrowRight, Brain, Sparkles } from "lucide-react";
 import { Spinner } from "@/components/ui";
+import { demoLogin, getMe } from "@/lib/api/auth";
 
 export default function LandingPage() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, setAuth } = useAuth();
   const router = useRouter();
+  const [demoLoading, setDemoLoading] = useState<"student" | "teacher" | null>(null);
+
+  async function handleDemoLaunch(role: "student" | "teacher") {
+    setDemoLoading(role);
+    try {
+      const res = await demoLogin(role);
+      localStorage.setItem("magedu_token", res.access_token);
+      localStorage.setItem("magedu_diagnostic_done", "true");
+      localStorage.setItem("magedu_onboarding_done", "true");
+      const currentUser = await getMe();
+      setAuth(res.access_token, currentUser);
+
+      if (role === "student") {
+        router.push("/student/dashboard");
+      } else {
+        router.push("/teacher/dashboard");
+      }
+    } catch (e) {
+      console.error("Demo login error:", e);
+      router.push("/login");
+    } finally {
+      setDemoLoading(null);
+    }
+  }
 
   useEffect(() => {
     if (!isLoading && user) {
@@ -68,16 +93,38 @@ export default function LandingPage() {
             The fascinating and amazing world of adaptive education, requiring very little maintenance. Every session moves you forward.
           </p>
 
-          {/* Reference Button Style */}
-          <div className="mt-12 animate-fade-in" style={{ animationDelay: '400ms' }}>
+          {/* Quick Action & 1-Click Demo Launchers */}
+          <div className="mt-10 flex flex-wrap items-center gap-4 animate-fade-in" style={{ animationDelay: '400ms' }}>
             <Link href="/signup" className="inline-flex items-center gap-4 border-2 border-[var(--accent)] rounded-full pl-8 pr-3 py-2 hover:bg-[var(--accent)] group transition-all duration-300">
               <span className="text-[var(--primary-foreground)] text-sm font-bold uppercase tracking-[0.15em] group-hover:text-[var(--accent-foreground)] transition-colors">
-                Start Now
+                Get Started
               </span>
-              <div className="w-12 h-12 rounded-full bg-[var(--secondary)] flex items-center justify-center text-[var(--secondary-foreground)] shadow-lg group-hover:scale-105 transition-transform">
-                <Brain size={20} strokeWidth={2.5} />
+              <div className="w-10 h-10 rounded-full bg-[var(--secondary)] flex items-center justify-center text-[var(--secondary-foreground)] shadow-lg group-hover:scale-105 transition-transform">
+                <Brain size={18} strokeWidth={2.5} />
               </div>
             </Link>
+
+            <button
+              type="button"
+              id="hero-demo-student-btn"
+              onClick={() => handleDemoLaunch("student")}
+              disabled={demoLoading !== null}
+              className="inline-flex items-center gap-2.5 px-6 py-3 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase tracking-wider backdrop-blur-sm transition-all border border-white/25 active:scale-95 disabled:opacity-50"
+            >
+              <span>🎓</span>
+              <span>{demoLoading === "student" ? "Launching..." : "Demo as Student"}</span>
+            </button>
+
+            <button
+              type="button"
+              id="hero-demo-teacher-btn"
+              onClick={() => handleDemoLaunch("teacher")}
+              disabled={demoLoading !== null}
+              className="inline-flex items-center gap-2.5 px-6 py-3 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase tracking-wider backdrop-blur-sm transition-all border border-white/25 active:scale-95 disabled:opacity-50"
+            >
+              <span>👩‍🏫</span>
+              <span>{demoLoading === "teacher" ? "Launching..." : "Demo as Teacher"}</span>
+            </button>
           </div>
         </div>
 

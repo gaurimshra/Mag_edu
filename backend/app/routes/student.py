@@ -68,6 +68,10 @@ async def get_dashboard(
 
     # Risk calculation is done on the teacher side, we just send a default or calculate it here
     
+    from app.models.gamification import StudentBadge
+    badges_stmt = select(func.count()).select_from(StudentBadge).where(StudentBadge.student_id == user.id)
+    badges_earned = (await db.execute(badges_stmt)).scalar() or 0
+    
     return StudentDashboardOut(
         student_id=profile.user_id,
         name=user.name,
@@ -77,7 +81,7 @@ async def get_dashboard(
         pace=profile.pace.value,
         pace_score=profile.pace_score,
         mastery=mastery_out,
-        badges_earned=0, # TODO query badges
+        badges_earned=badges_earned,
         risk_level="clear",
         risk_reason="Doing well",
         next_skill_id=next_skill_id,
@@ -230,8 +234,22 @@ async def submit_answer(
     if payload.is_correct:
         badges = await check_and_award_badges(db, profile, "streak")
         
-    # TODO: generate intelligent feedback using agent here if needed
-    feedback = "Great job!" if payload.is_correct else f"Not quite. The correct answer was {payload.correct_answer}."
+    # Generate intelligent feedback using agent
+    from app.services.agent.llm import generate_json
+    from pydantic import BaseModel
+    
+    class FeedbackResponse(BaseModel):
+        feedback: str
+        
+    system_prompt = f"You are a supportive tutor. The student's answer was '{payload.student_answer}'. The correct answer is '{payload.correct_answer}'. Maintain a concise, encouraging tone (1-2 sentences). If incorrect, provide a gentle hint."
+    user_prompt = "Provide feedback on my answer."
+    
+    try:
+        llm_resp = await generate_json(system_prompt, user_prompt, FeedbackResponse, temperature=0.7)
+        feedback = llm_resp.feedback
+    except Exception as e:
+        print(f"Agent feedback generation failed: {e}")
+        feedback = "Great job!" if payload.is_correct else f"Not quite. The correct answer was {payload.correct_answer}."
 
     await db.commit()
 

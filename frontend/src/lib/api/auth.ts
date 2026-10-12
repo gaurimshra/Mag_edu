@@ -37,6 +37,13 @@ export async function login(payload: LoginPayload): Promise<TokenResponse> {
   });
 }
 
+export async function demoLogin(role: "student" | "teacher"): Promise<TokenResponse> {
+  return apiRequest<TokenResponse>("/api/auth/demo-login", {
+    method: "POST",
+    body: JSON.stringify({ role }),
+  });
+}
+
 export async function signupTeacher(payload: SignupTeacherPayload): Promise<{ message: string }> {
   return apiRequest("/api/auth/signup", {
     method: "POST",

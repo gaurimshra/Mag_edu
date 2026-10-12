@@ -5,8 +5,9 @@ JWT-based authentication helpers.
 - FastAPI dependency: get_current_user
 """
 
+from __future__ import annotations
 from datetime import datetime, timedelta, timezone
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 import bcrypt
 from jose import JWTError, jwt
@@ -17,7 +18,9 @@ from sqlalchemy import select
 
 from app.core.config import get_settings
 from app.core.database import get_db
-from app.models.user import User
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 settings = get_settings()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
@@ -70,6 +73,7 @@ async def get_current_user(
     if user_id is None:
         raise credentials_error
 
+    from app.models.user import User
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if user is None:

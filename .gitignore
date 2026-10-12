@@ -12,5 +12,10 @@ build/
 
 # Source/private planning material and generated extraction artifacts
 *.md
-*.pdf
+!README.md
+
+*.db
+*.sqlite3
+*.txt
+
 pdf_pages/

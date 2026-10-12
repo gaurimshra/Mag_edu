@@ -18,6 +18,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from app.core.config import get_settings
+from app.core.database import AsyncSessionLocal
 from app.models.content import ContentChunk
 from app.services.rag.embedder import embed_batch
 
@@ -69,10 +70,6 @@ async def main():
     if not PDF_DIR.exists():
         print(f"Error: Directory {PDF_DIR} not found.")
         return
-
-    # Setup DB connection
-    engine = create_async_engine(settings.database_url)
-    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     pdf_files = list(PDF_DIR.glob("*.pdf"))
     if not pdf_files:
@@ -129,7 +126,7 @@ async def main():
     embeddings = await embed_batch(texts_to_embed, batch_size=16)
     
     print("Inserting into database...")
-    async with async_session() as session:
+    async with AsyncSessionLocal() as session:
         for item, embedding in zip(all_chunks_data, embeddings):
             chunk = ContentChunk(
                 **item,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Bot, Send, Sparkles } from "lucide-react";
 import { apiRequest } from "@/lib/api/client";
 
@@ -10,6 +10,18 @@ export default function AITutorPage() {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const q = params.get("q");
+      if (q) {
+        setInput(q);
+        // Remove it from URL so it doesn't persist
+        window.history.replaceState({}, '', '/student/ai-tutor');
+      }
+    }
+  }, []);
 
   const sendMessage = async (text: string) => {
     if (!text.trim()) return;

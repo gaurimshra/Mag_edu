@@ -148,7 +148,7 @@ export default function LessonPage() {
                 {["Simpler explanation", "Show an example", "Give me a hint", "Explain the prerequisite"].map(opt => (
                   <button 
                     key={opt}
-                    onClick={() => alert("Feature coming soon!")}
+                    onClick={() => router.push(`/student/ai-tutor?q=${encodeURIComponent(opt + ' for ' + chapter.title)}`)}
                     className="bg-white border border-[#E4E3DE] text-[#1A1C18] text-xs font-medium px-3 py-1.5 rounded-[8px] hover:border-[#F08C00] transition-colors"
                   >
                     {opt}

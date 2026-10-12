@@ -16,7 +16,7 @@ from app.core.security import (
 from app.models.user import User, UserRole
 from app.models.student import StudentProfile
 from app.models.classroom import Classroom, ClassroomMember
-from app.schemas.auth import SignupRequest, LoginRequest, TokenResponse, MeResponse
+from app.schemas.auth import SignupRequest, LoginRequest, DemoLoginRequest, TokenResponse, MeResponse
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -73,6 +73,55 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
         )
 
     # Get classroom ID if student
+    classroom_id = None
+    if user.role == UserRole.student:
+        result = await db.execute(
+            select(ClassroomMember.classroom_id).where(ClassroomMember.student_id == user.id)
+        )
+        classroom_id = result.scalar_one_or_none()
+
+    access_token = create_access_token(
+        data={"user_id": user.id, "email": user.email, "role": user.role.value, "classroom_id": classroom_id}
+    )
+
+    return TokenResponse(
+        access_token=access_token,
+        user_id=user.id,
+        name=user.name,
+        email=user.email,
+        role=user.role.value,
+        classroom_id=classroom_id,
+    )
+
+
+@router.post("/demo-login", response_model=TokenResponse)
+async def demo_login(payload: DemoLoginRequest, db: AsyncSession = Depends(get_db)):
+    """One-click instant login for live presentation / demo purposes."""
+    role = UserRole.teacher if payload.role == "teacher" else UserRole.student
+    target_email = "teacher@school.edu" if role == UserRole.teacher else "student1@school.edu"
+
+    result = await db.execute(select(User).where(User.email == target_email))
+    user = result.scalar_one_or_none()
+
+    if not user:
+        result = await db.execute(select(User).where(User.role == role))
+        user = result.scalars().first()
+
+    if not user:
+        user = User(
+            name="Mrs. Sharma" if role == UserRole.teacher else "Aarav Sharma",
+            email=target_email,
+            password_hash=hash_password("password123"),
+            role=role,
+        )
+        db.add(user)
+        await db.flush()
+
+        if role == UserRole.student:
+            profile = StudentProfile(user_id=user.id, xp=1250, streak=7)
+            db.add(profile)
+        await db.commit()
+
     classroom_id = None
     if user.role == UserRole.student:
         result = await db.execute(

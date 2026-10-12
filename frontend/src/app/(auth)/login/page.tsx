@@ -3,10 +3,10 @@
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { login, getMe } from "@/lib/api/auth";
+import { login, demoLogin, getMe } from "@/lib/api/auth";
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth-context";
-import { GraduationCap, ArrowRight } from "lucide-react";
+import { GraduationCap, ArrowRight, Sparkles, UserCheck, School } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,7 +15,33 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState<"student" | "teacher" | null>(null);
   const [error, setError] = useState("");
+
+  async function handleDemoLogin(role: "student" | "teacher") {
+    setError("");
+    setDemoLoading(role);
+
+    try {
+      const tokenResponse = await demoLogin(role);
+      localStorage.setItem("magedu_token", tokenResponse.access_token);
+      localStorage.setItem("magedu_diagnostic_done", "true");
+      localStorage.setItem("magedu_onboarding_done", "true");
+      const user = await getMe();
+      setAuth(tokenResponse.access_token, user);
+
+      if (role === "student") {
+        router.push("/student/dashboard");
+      } else {
+        router.push("/teacher/dashboard");
+      }
+    } catch (err) {
+      const apiErr = err as ApiError;
+      setError(apiErr?.message || `Failed to log in as demo ${role}.`);
+    } finally {
+      setDemoLoading(null);
+    }
+  }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -96,14 +122,79 @@ export default function LoginPage() {
             <span className="text-[var(--foreground)] font-bold text-xl tracking-wider uppercase">MagEdu</span>
           </div>
 
-          <div className="bg-[var(--surface)] rounded-[32px] p-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-[var(--border)] relative overflow-hidden">
+          <div className="bg-[var(--surface)] rounded-[32px] p-8 md:p-10 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-[var(--border)] relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-2 bg-[var(--accent)]" />
             
             <h2 className="text-3xl font-bold text-[var(--foreground)] tracking-tight">Welcome back</h2>
             <p className="text-sm text-[var(--foreground)] opacity-70 mt-2 font-medium">Continue your learning journey.</p>
 
+            {/* ── 1-Click Instant Demo Launchers ── */}
+            <div className="mt-6 p-4 rounded-2xl bg-gradient-to-br from-[var(--surface-variant,#f8fafc)] to-[var(--background)] border border-[var(--border)]">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-bold uppercase tracking-wider text-[var(--foreground)] opacity-80 flex items-center gap-1.5">
+                  <Sparkles size={14} className="text-amber-500" />
+                  Instant 1-Click Demo
+                </span>
+                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600">
+                  Ready to Test
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  id="btn-demo-student"
+                  disabled={demoLoading !== null || loading}
+                  onClick={() => handleDemoLogin("student")}
+                  className="group flex flex-col items-start p-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] hover:border-[var(--primary)] hover:shadow-md transition-all text-left disabled:opacity-60"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-6 h-6 rounded-full bg-blue-500/10 text-blue-600 flex items-center justify-center">
+                      <UserCheck size={14} />
+                    </div>
+                    <span className="text-xs font-bold text-[var(--foreground)] group-hover:text-[var(--primary)]">
+                      Student Demo
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-[var(--foreground)] opacity-60">
+                    {demoLoading === "student" ? "Launching..." : "Aarav Sharma · 10A"}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  id="btn-demo-teacher"
+                  disabled={demoLoading !== null || loading}
+                  onClick={() => handleDemoLogin("teacher")}
+                  className="group flex flex-col items-start p-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] hover:border-[var(--secondary)] hover:shadow-md transition-all text-left disabled:opacity-60"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-6 h-6 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                      <School size={14} />
+                    </div>
+                    <span className="text-xs font-bold text-[var(--foreground)] group-hover:text-[var(--secondary)]">
+                      Teacher Demo
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-[var(--foreground)] opacity-60">
+                    {demoLoading === "teacher" ? "Launching..." : "Mrs. Sharma · Science"}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <div className="relative my-6 text-center">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-[var(--border)]" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase tracking-wider">
+                <span className="bg-[var(--surface)] px-3 text-[var(--foreground)] opacity-50 font-semibold">
+                  Or login with credentials
+                </span>
+              </div>
+            </div>
+
             {error && (
-              <div className="mt-6 px-5 py-4 rounded-[16px] bg-[var(--error)] bg-opacity-10 border border-[var(--error)] border-opacity-20 text-sm text-[var(--error)] font-medium flex items-start gap-3">
+              <div className="mt-4 px-5 py-4 rounded-[16px] bg-[var(--error)] bg-opacity-10 border border-[var(--error)] border-opacity-20 text-sm text-[var(--error)] font-medium flex items-start gap-3">
                 <span className="w-1.5 h-1.5 rounded-full bg-[var(--error)] mt-1.5 shrink-0" />
                 {error}
               </div>
